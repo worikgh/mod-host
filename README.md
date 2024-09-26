@@ -107,7 +107,7 @@ Commands (or Protocol)
 The commands supported by mod-host are:
 
     add <lv2_uri> <instance_number>
-        * add an LV2 plugin encapsulated as a jack client
+        * add an LV2 plugin encapsulated as a jack client, in activated state
         e.g.: add "http://lv2plug.in/plugins/eg-amp" 0
         instance_number must be any value between 0 ~ 9990, inclusively
 
@@ -115,6 +115,17 @@ The commands supported by mod-host are:
         * remove an LV2 plugin instance (and also the jack client)
         e.g.: remove 0
         when instance_number is -1 all plugins will be removed
+
+    activate <instance_number> <instance_number_end> <activate_value>
+        * toggle effects activated state
+        e.g.: activate 0 0 1
+        if activate_value = 1 activate effect
+        if activate_value = 0 deactivate effect
+
+    preload <lv2_uri> <instance_number>
+        * add an LV2 plugin encapsulated as a jack client, in deactivated state
+        e.g.: preload "http://lv2plug.in/plugins/eg-amp" 0
+        instance_number must be any value between 0 ~ 9990, inclusively
 
     preset_load <instance_number> <preset_uri>
         * load a preset state of an effect instance
@@ -201,9 +212,9 @@ The commands supported by mod-host are:
         * set the MIDI channel which changes pedalboard snapshots on MIDI program change. <midi_channel> is in the range of [0,15].
         e.g.: set_midi_program_change_pedalboard_snapshot_channel 1 4 to enable listening for preset changes on channel 5
 
-    cc_map <instance_number> <param_symbol> <device_id> <actuator_id> <label> <value> <minimum> <maximum> <steps> <unit> <scalepoints_count> <scalepoints...>
+    cc_map <instance_number> <param_symbol> <device_id> <actuator_id> <label> <value> <minimum> <maximum> <steps> <extraflags> <unit> <scalepoints_count> <scalepoints...>
         * map a Control Chain actuator to a control port
-        e.g.: cc_map 0 "gain" 0 1 "Gain" 0.0 -24.0 3.0 33 "dB" 0
+        e.g.: cc_map 0 "gain" 0 1 "Gain" 0.0 -24.0 3.0 33 0 "dB" 0
 
     cc_unmap <instance_number> <param_symbol>
         * unmap the Control Chain actuator from a control port
