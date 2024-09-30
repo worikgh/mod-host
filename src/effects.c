@@ -4123,6 +4123,16 @@ int effects_init(void* client)
     lilv_world_load_all(g_lv2_data);
     g_plugins = lilv_world_get_all_plugins(g_lv2_data);
 
+    /* Display URIs for loaded plugins */
+    LilvIter *it = lilv_plugins_begin(g_plugins);
+    while(it) {
+      const LilvPlugin *p = lilv_plugins_get(g_plugins, it);
+      const LilvNode *lnp = lilv_plugin_get_uri(p);
+      const char *cp = lilv_node_as_uri(lnp);
+      fprintf(stderr, "Plugin: %s\n", cp);
+      it = lilv_plugin_classes_next(g_plugins, it);
+    }
+
     /* Lilv Nodes initialization */
     g_lilv_nodes.atom_port = lilv_new_uri(g_lv2_data, LV2_ATOM__AtomPort);
     g_lilv_nodes.audio = lilv_new_uri(g_lv2_data, LILV_URI_AUDIO_PORT);
