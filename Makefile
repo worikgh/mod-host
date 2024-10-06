@@ -23,7 +23,7 @@ CFLAGS += -Werror=implicit-function-declaration -Werror=return-type
 
 # debug mode compiler and linker flags
 ifeq ($(DEBUG), 1)
-   CFLAGS += -O0 -g -Wall -Wextra -c -DDEBUG
+   CFLAGS += -O0 -g3 -Wall -Wextra -c -DDEBUG
    LDFLAGS +=
 else
    CFLAGS += -fvisibility=hidden

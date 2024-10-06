@@ -84,6 +84,7 @@ static SOCKET g_fbclientfd = INVALID_SOCKET;
 static int g_buffer_size;
 static void (*g_receive_cb)(msg_t *msg);
 
+static int interactive = 0;
 /*
 ************************************************************************************************************************
 *           LOCAL FUNCTION PROTOTYPES
@@ -110,7 +111,9 @@ static void (*g_receive_cb)(msg_t *msg);
 *           GLOBAL FUNCTIONS
 ************************************************************************************************************************
 */
-
+void set_interactive() {
+  interactive = 1;
+}
 int socket_start(int socket_port, int feedback_port, int buffer_size)
 {
 #ifdef _WIN32
@@ -259,13 +262,18 @@ int socket_send(int destination, const char *buffer, int size)
 
     while (size > 0)
     {
-        ret = send(destination, buffer, size, 0);
-        if (ret < 0)
+      if(!interactive){
+	ret = send(destination, buffer, size, 0);
+      } else {
+	ret = write(1, buffer, size );
+      }
+      if (ret < 0)
         {
             perror("send error");
-        }
-        size -= ret;
-        buffer += ret;
+	    break;
+	}
+      size -= ret;
+      buffer += ret;
     }
 
     return ret;

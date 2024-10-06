@@ -629,7 +629,8 @@ static void interactive_mode(void)
 {
     msg_t msg;
     char *input;
-
+    // Tell the socket system to write to stdout
+    set_interactive();
     completer_init();
 
     msg.sender_id = STDOUT_FILENO;
@@ -654,7 +655,7 @@ static void interactive_mode(void)
 
                 free(input);
                 input = NULL;
-            }
+	    }
         }
         else break;
     }
@@ -670,7 +671,7 @@ static void term_signal(int sig)
     return; (void)sig;
 }
 
-static int mod_host_init(jack_client_t* client, int socket_port, int feedback_port)
+static int mod_host_init(jack_client_t* client, int socket_port, int feedback_port, int interactive)
 {
 #ifdef HAVE_FFTW335
     /* Make fftw thread-safe */
@@ -745,7 +746,7 @@ static int mod_host_init(jack_client_t* client, int socket_port, int feedback_po
         return -1;
 
     /* Setup the socket */
-    if (socket_start(socket_port, feedback_port, SOCKET_MSG_BUFFER_SIZE) < 0)
+    if (!interactive && socket_start(socket_port, feedback_port, SOCKET_MSG_BUFFER_SIZE) < 0)
         return -1;
 
     socket_set_receive_cb(protocol_parse);
@@ -895,7 +896,7 @@ int main(int argc, char **argv)
 #endif
     }
 
-    if (mod_host_init(NULL, socket_port, feedback_port) != 0)
+    if (mod_host_init(NULL, socket_port, feedback_port, interactive) != 0)
     {
         exit(EXIT_FAILURE);
         return 1;
@@ -942,12 +943,13 @@ int main(int argc, char **argv)
     return 0;
 }
 
-__attribute__ ((visibility("default")))
-int jack_initialize(jack_client_t* client, const char* load_init);
-
-int jack_initialize(jack_client_t* client, const char* load_init)
+__attribute__((visibility("default")))
+// Deprecated
+int _jack_initialize(jack_client_t* client, const char* load_init);
+int _jack_initialize(jack_client_t* client, const char* load_init)
 {
-    const char* const mod_log = getenv("MOD_LOG");
+  fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+  const char* const mod_log = getenv("MOD_LOG");
     int socket_port = SOCKET_DEFAULT_PORT;
     int feedback_port = 0;
 
@@ -963,7 +965,7 @@ int jack_initialize(jack_client_t* client, const char* load_init)
     if (mod_log != NULL && atoi(mod_log) != 0)
         protocol_verbose(1);
 
-    if (mod_host_init(client, socket_port, feedback_port) != 0)
+    if (mod_host_init(client, socket_port, feedback_port, 0) != 0)
         return 1;
 
     running = 1;
