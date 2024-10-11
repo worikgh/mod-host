@@ -260,6 +260,7 @@ int socket_send(int destination, const char *buffer, int size)
 {
     int ret = -1;
 
+    /* fprintf(stderr, "%s:%d:%s buffer: '%s'\n", __FILE__, __LINE__, __FUNCTION__, buffer); */
     while (size > 0)
     {
       if(!interactive){
