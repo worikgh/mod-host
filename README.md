@@ -116,9 +116,9 @@ The commands supported by mod-host are:
         e.g.: remove 0
         when instance_number is -1 all plugins will be removed
 
-    activate <instance_number> <instance_number_end> <activate_value>
-        * toggle effects activated state
-        e.g.: activate 0 0 1
+    activate <instance_number> <activate_value>
+        * toggle effect activated state
+        e.g.: activate 0 1
         if activate_value = 1 activate effect
         if activate_value = 0 deactivate effect
 
@@ -146,6 +146,10 @@ The commands supported by mod-host are:
     disconnect <origin_port> <destination_port>
         * disconnect two jack ports
         e.g.: disconnect "system:capture_1" "effect_0:in"
+
+    disconnect_all <origin_port>
+        * disconnect all connections of a jack port
+        e.g.: disconnect_all "effect_0:in"
 
     bypass <instance_number> <bypass_value>
         * toggle effect processing
@@ -199,6 +203,10 @@ The commands supported by mod-host are:
     midi_unmap <instance_number> <param_symbol>
         * unmap the MIDI controller from a control port
         e.g.: midi_unmap 0 "gain"
+
+    monitor_audio_levels <source_port_name> <enable>
+        * monitor audio levels for a specific jack port (on the feedback port)
+        e.g.: monitor_audio_levels "system:capture_1" 1
 
     monitor_midi_program <midi_channel> <enable>
         * listen to MIDI program change messages (on the feedback port)

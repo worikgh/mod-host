@@ -277,6 +277,7 @@ enum {
 
 enum PostPonedEventType {
     POSTPONED_PARAM_SET,
+    POSTPONED_AUDIO_MONITOR,
     POSTPONED_OUTPUT_MONITOR,
     POSTPONED_MIDI_PROGRAM_CHANGE,
     POSTPONED_MIDI_MAP,
@@ -304,6 +305,12 @@ enum UpdatePositionFlag {
 typedef struct HMI_ADDRESSING_T hmi_addressing_t;
 #endif
 typedef struct PORT_T port_t;
+
+typedef struct AUDIO_MONITOR_T {
+    jack_port_t *port;
+    char *source_port_name;
+    float value;
+} audio_monitor_t;
 
 typedef struct CV_SOURCE_T {
     port_t *port;
@@ -527,6 +534,7 @@ typedef struct URIDS_T {
     LV2_URID bufsz_minBlockLength;
     LV2_URID bufsz_nomimalBlockLength;
     LV2_URID bufsz_sequenceSize;
+    LV2_URID jack_client;
     LV2_URID log_Error;
     LV2_URID log_Note;
     LV2_URID log_Trace;
@@ -585,6 +593,11 @@ typedef struct POSTPONED_PARAMETER_EVENT_T {
     float value;
 } postponed_parameter_event_t;
 
+typedef struct POSTPONED_AUDIO_MONITOR_EVENT_T {
+    int index;
+    float value;
+} postponed_audio_monitor_event_t;
+
 typedef struct POSTPONED_MIDI_PROGRAM_CHANGE_EVENT_T {
     int8_t program;
     int8_t channel;
@@ -627,6 +640,7 @@ typedef struct POSTPONED_EVENT_T {
     enum PostPonedEventType type;
     union {
         postponed_parameter_event_t parameter;
+        postponed_audio_monitor_event_t audio_monitor;
         postponed_midi_program_change_event_t program_change;
         postponed_midi_map_event_t midi_map;
         postponed_transport_event_t transport;
@@ -724,6 +738,9 @@ static jack_port_t *g_audio_in2_port;
 static jack_port_t *g_audio_out1_port;
 static jack_port_t *g_audio_out2_port;
 #endif
+static audio_monitor_t *g_audio_monitors;
+static pthread_mutex_t g_audio_monitor_mutex;
+static int g_audio_monitor_count;
 static jack_port_t *g_midi_in_port;
 static jack_position_t g_jack_pos;
 static bool g_jack_rolling;
@@ -756,7 +773,7 @@ static LV2_HMI_WidgetControl g_hmi_wc;
 static MOD_License_Feature g_license;
 static LV2_Atom_Forge g_lv2_atom_forge;
 static LV2_Log_Log g_lv2_log;
-static LV2_Options_Option g_options[8];
+static LV2_Options_Option g_options[9];
 static LV2_State_Free_Path g_state_freePath;
 static LV2_URI_Map_Feature g_uri_map;
 static LV2_URID_Map g_urid_map;
@@ -1225,16 +1242,18 @@ static void RunPostPonedEvents(int ignored_effect_id)
     // cached data, to make sure we only handle similar events once
     bool got_midi_program = false;
     bool got_transport = false;
-    postponed_cached_effect_events cached_process_out_buf;
+    postponed_cached_effect_events cached_audio_monitor, cached_process_out_buf;
     postponed_cached_symbol_events cached_param_set, cached_output_mon;
 
+    cached_audio_monitor.last_effect_id = -1;
     cached_process_out_buf.last_effect_id = -1;
     cached_param_set.last_effect_id = -1;
-    cached_output_mon.last_effect_id = -1;
     cached_param_set.last_symbol[0] = '\0';
     cached_param_set.last_symbol[MAX_CHAR_BUF_SIZE] = '\0';
+    cached_output_mon.last_effect_id = -1;
     cached_output_mon.last_symbol[0] = '\0';
     cached_output_mon.last_symbol[MAX_CHAR_BUF_SIZE] = '\0';
+    INIT_LIST_HEAD(&cached_audio_monitor.effects.siblings);
     INIT_LIST_HEAD(&cached_process_out_buf.effects.siblings);
     INIT_LIST_HEAD(&cached_param_set.symbols.siblings);
     INIT_LIST_HEAD(&cached_output_mon.symbols.siblings);
@@ -1281,6 +1300,23 @@ static void RunPostPonedEvents(int ignored_effect_id)
             // save for fast checkup next time
             cached_param_set.last_effect_id = eventptr->event.parameter.effect_id;
             strncpy(cached_param_set.last_symbol, eventptr->event.parameter.symbol, MAX_CHAR_BUF_SIZE);
+            break;
+
+        case POSTPONED_AUDIO_MONITOR:
+            if (ShouldIgnorePostPonedEffectEvent(eventptr->event.audio_monitor.index, &cached_audio_monitor))
+                continue;
+
+            pthread_mutex_lock(&g_audio_monitor_mutex);
+            if (eventptr->event.audio_monitor.index < g_audio_monitor_count)
+                g_audio_monitors[eventptr->event.audio_monitor.index].value = 0.f;
+            pthread_mutex_unlock(&g_audio_monitor_mutex);
+
+            snprintf(buf, FEEDBACK_BUF_SIZE, "audio_monitor %i %f", eventptr->event.audio_monitor.index,
+                                                                    eventptr->event.audio_monitor.value);
+            socket_send_feedback_debug(buf);
+
+            // save for fast checkup next time
+            cached_audio_monitor.last_effect_id = eventptr->event.audio_monitor.index;
             break;
 
         case POSTPONED_OUTPUT_MONITOR:
@@ -1552,6 +1588,11 @@ static void RunPostPonedEvents(int ignored_effect_id)
     postponed_cached_effect_list_data *peffect;
     postponed_cached_symbol_list_data *psymbol;
 
+    list_for_each_safe(it, it2, &cached_audio_monitor.effects.siblings)
+    {
+        peffect = list_entry(it, postponed_cached_effect_list_data, siblings);
+        free(peffect);
+    }
     list_for_each_safe(it, it2, &cached_process_out_buf.effects.siblings)
     {
         peffect = list_entry(it, postponed_cached_effect_list_data, siblings);
@@ -2789,6 +2830,49 @@ static int ProcessGlobalClient(jack_nframes_t nframes, void *arg)
     }
 #endif
 
+    // Handle audio monitors
+    if (pthread_mutex_trylock(&g_audio_monitor_mutex) == 0)
+    {
+        float *monitorbuf;
+        float absvalue, oldvalue;
+
+        for (int i = 0; i < g_audio_monitor_count; ++i)
+        {
+            monitorbuf = (float*)jack_port_get_buffer(g_audio_monitors[i].port, nframes);
+            oldvalue = value = g_audio_monitors[i].value;
+
+            for (jack_nframes_t i = 0 ; i < nframes; i++)
+            {
+                absvalue = fabsf(monitorbuf[i]);
+
+                if (absvalue > value)
+                    value = absvalue;
+            }
+
+            if (oldvalue < value)
+            {
+                g_audio_monitors[i].value = value;
+
+                postponed_event_list_data* const posteventptr = rtsafe_memory_pool_allocate_atomic(g_rtsafe_mem_pool);
+
+                if (posteventptr)
+                {
+                    posteventptr->event.type = POSTPONED_AUDIO_MONITOR;
+                    posteventptr->event.audio_monitor.index = i;
+                    posteventptr->event.audio_monitor.value = value;
+
+                    pthread_mutex_lock(&g_rtsafe_mutex);
+                    list_add_tail(&posteventptr->siblings, &g_rtsafe_list);
+                    pthread_mutex_unlock(&g_rtsafe_mutex);
+
+                    needs_post = true;
+                }
+            }
+        }
+
+        pthread_mutex_unlock(&g_audio_monitor_mutex);
+    }
+
     if (UpdateGlobalJackPosition(pos_flag, false))
         needs_post = true;
 
@@ -3008,6 +3092,9 @@ static void GetFeatures(effect_t *effect)
     features[FEATURE_TERMINATOR]        = NULL;
 
     effect->features = features;
+
+    /* also update jack client option value */
+    g_options[7].value = effect->jack_client;
 }
 
 /**
@@ -3954,6 +4041,7 @@ int effects_init(void* client)
 
     pthread_mutex_init(&g_rtsafe_mutex, &mutex_atts);
     pthread_mutex_init(&g_raw_midi_port_mutex, &mutex_atts);
+    pthread_mutex_init(&g_audio_monitor_mutex, &mutex_atts);
     pthread_mutex_init(&g_midi_learning_mutex, &mutex_atts);
 #ifdef __MOD_DEVICES__
     pthread_mutex_init(&g_hmi_mutex, &mutex_atts);
@@ -4219,6 +4307,8 @@ int effects_init(void* client)
     g_urids.bufsz_nomimalBlockLength = urid_to_id(g_symap, LV2_BUF_SIZE__nominalBlockLength);
     g_urids.bufsz_sequenceSize   = urid_to_id(g_symap, LV2_BUF_SIZE__sequenceSize);
 
+    g_urids.jack_client          = urid_to_id(g_symap, "http://jackaudio.org/metadata/client");
+
     g_urids.log_Error            = urid_to_id(g_symap, LV2_LOG__Error);
     g_urids.log_Note             = urid_to_id(g_symap, LV2_LOG__Note);
     g_urids.log_Trace            = urid_to_id(g_symap, LV2_LOG__Trace);
@@ -4299,10 +4389,17 @@ int effects_init(void* client)
 
     g_options[7].context = LV2_OPTIONS_INSTANCE;
     g_options[7].subject = 0;
-    g_options[7].key = 0;
-    g_options[7].size = 0;
-    g_options[7].type = 0;
+    g_options[7].key = g_urids.jack_client;
+    g_options[7].size = sizeof(jack_client_t*);
+    g_options[7].type = g_urids.jack_client;
     g_options[7].value = NULL;
+
+    g_options[8].context = LV2_OPTIONS_INSTANCE;
+    g_options[8].subject = 0;
+    g_options[8].key = 0;
+    g_options[8].size = 0;
+    g_options[8].type = 0;
+    g_options[8].value = NULL;
 
 #ifdef __MOD_DEVICES__
     g_hmi_wc.size                    = sizeof(g_hmi_wc);
@@ -4530,6 +4627,7 @@ int effects_finish(int close_client)
     sem_destroy(&g_postevents_semaphore);
     pthread_mutex_destroy(&g_rtsafe_mutex);
     pthread_mutex_destroy(&g_raw_midi_port_mutex);
+    pthread_mutex_destroy(&g_audio_monitor_mutex);
     pthread_mutex_destroy(&g_midi_learning_mutex);
 #ifdef __MOD_DEVICES__
     pthread_mutex_destroy(&g_hmi_mutex);
@@ -5994,6 +6092,7 @@ int effects_remove(int effect_id)
     return SUCCESS;
 }
 
+#if 0
 static void* effects_activate_thread(void* arg)
 {
     jack_client_t *jack_client = arg;
@@ -6013,13 +6112,15 @@ static void* effects_deactivate_thread(void* arg)
 
     return NULL;
 }
+#endif
 
-int effects_activate(int effect_id, int effect_id_end, int value)
+int effects_activate(int effect_id, int value)
 {
     if (!InstanceExist(effect_id))
     {
         return ERR_INSTANCE_NON_EXISTS;
     }
+#if 0
     if (effect_id > effect_id_end)
     {
         return ERR_INVALID_OPERATION;
@@ -6027,6 +6128,7 @@ int effects_activate(int effect_id, int effect_id_end, int value)
 
     if (effect_id == effect_id_end)
     {
+#endif
         effect_t *effect = &g_effects[effect_id];
 
         if (value)
@@ -6058,6 +6160,7 @@ int effects_activate(int effect_id, int effect_id_end, int value)
                 lilv_instance_deactivate(effect->lilv_instance);
             }
         }
+#if 0
     }
     else
     {
@@ -6112,6 +6215,7 @@ int effects_activate(int effect_id, int effect_id_end, int value)
             }
         }
     }
+#endif
 
     return SUCCESS;
 }
@@ -6135,6 +6239,16 @@ int effects_disconnect(const char *portA, const char *portB)
 
     ret = jack_disconnect(g_jack_global_client, portA, portB);
     if (ret != 0) ret = jack_disconnect(g_jack_global_client, portB, portA);
+    if (ret != 0) return ERR_JACK_PORT_DISCONNECTION;
+
+    return ret;
+}
+
+int effects_disconnect_all(const char *port)
+{
+    int ret;
+
+    ret = jack_port_disconnect(g_jack_global_client, jack_port_by_name(g_jack_global_client, port));
     if (ret != 0) return ERR_JACK_PORT_DISCONNECTION;
 
     return ret;
@@ -8192,10 +8306,115 @@ int effects_freewheeling_enable(int enable)
 
 int effects_processing_enable(int enable)
 {
-    g_processing_enabled = enable;
+    switch (enable)
+    {
+    // regular on/off
+    case 0:
+    case 1:
+        g_processing_enabled = enable != 0;
+        break;
 
-    if (enable > 1) {
+    // turn on while reporting feedback data ready
+    case 2:
+        g_processing_enabled = true;
         effects_output_data_ready();
+        break;
+
+    // use fade-out while turning off
+    case -1:
+        monitor_client_setup_volume(-30.f);
+        if (g_processing_enabled)
+        {
+            monitor_client_wait_volume();
+            g_processing_enabled = false;
+        }
+        break;
+
+    // don't use fade-out while turning off, mute right away
+    case -2:
+        monitor_client_setup_volume(-30.f);
+        monitor_client_flush_volume();
+        g_processing_enabled = false;
+        break;
+
+    // use fade-in while turning on
+    case 3:
+        g_processing_enabled = true;
+        monitor_client_setup_volume(0.f);
+        break;
+
+    default:
+        return ERR_INVALID_OPERATION;
+    }
+
+    return SUCCESS;
+}
+
+int effects_monitor_audio_levels(const char *source_port_name, int enable)
+{
+    if (g_jack_global_client == NULL)
+        return ERR_INVALID_OPERATION;
+
+    if (enable)
+    {
+        for (int i = 0; i < g_audio_monitor_count; ++i)
+        {
+            if (!strcmp(g_audio_monitors[i].source_port_name, source_port_name))
+                return SUCCESS;
+        }
+
+        pthread_mutex_lock(&g_audio_monitor_mutex);
+        g_audio_monitors = realloc(g_audio_monitors, sizeof(audio_monitor_t) * (g_audio_monitor_count + 1));
+        pthread_mutex_unlock(&g_audio_monitor_mutex);
+
+        if (g_audio_monitors == NULL)
+            return ERR_MEMORY_ALLOCATION;
+
+        audio_monitor_t *monitor = &g_audio_monitors[g_audio_monitor_count];
+
+        char port_name[0xff];
+        snprintf(port_name, sizeof(port_name) - 1, "monitor_%d", g_audio_monitor_count + 1);
+
+        jack_port_t *port = jack_port_register(g_jack_global_client,
+                                               port_name,
+                                               JACK_DEFAULT_AUDIO_TYPE,
+                                               JackPortIsInput,
+                                               0);
+        if (port == NULL)
+            return ERR_JACK_PORT_REGISTER;
+
+        snprintf(port_name, sizeof(port_name) - 1, "%s:monitor_%d",
+                 jack_get_client_name(g_jack_global_client), g_audio_monitor_count + 1);
+        jack_connect(g_jack_global_client, source_port_name, port_name);
+
+        monitor->port = port;
+        monitor->source_port_name = strdup(source_port_name);
+        monitor->value = 0.f;
+
+        ++g_audio_monitor_count;
+    }
+    else
+    {
+        if (g_audio_monitor_count == 0)
+            return ERR_INVALID_OPERATION;
+
+        audio_monitor_t *monitor = &g_audio_monitors[g_audio_monitor_count - 1];
+
+        if (strcmp(monitor->source_port_name, source_port_name))
+            return ERR_INVALID_OPERATION;
+
+        pthread_mutex_lock(&g_audio_monitor_mutex);
+        --g_audio_monitor_count;
+        pthread_mutex_unlock(&g_audio_monitor_mutex);
+
+        jack_port_unregister(g_jack_global_client, monitor->port);
+        free(monitor->source_port_name);
+
+        if (g_audio_monitor_count == 0)
+        {
+            free(g_audio_monitors);
+            g_audio_monitors = NULL;
+        }
     }
 
     return SUCCESS;

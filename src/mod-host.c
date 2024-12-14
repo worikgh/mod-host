@@ -145,7 +145,7 @@ static void effects_remove_cb(proto_t *proto)
 static void effects_activate_cb(proto_t *proto)
 {
     int resp;
-    resp = effects_activate(atoi(proto->list[1]), atoi(proto->list[2]), atoi(proto->list[3]));
+    resp = effects_activate(atoi(proto->list[1]), atoi(proto->list[2]));
     protocol_response_int(resp, proto);
 }
 
@@ -196,6 +196,13 @@ static void effects_disconnect_cb(proto_t *proto)
 {
     int resp;
     resp = effects_disconnect(proto->list[1], proto->list[2]);
+    protocol_response_int(resp, proto);
+}
+
+static void effects_disconnect_all_cb(proto_t *proto)
+{
+    int resp;
+    resp = effects_disconnect_all(proto->list[1]);
     protocol_response_int(resp, proto);
 }
 
@@ -311,6 +318,13 @@ static void monitor_output_cb(proto_t *proto)
     protocol_response_int(resp, proto);
 }
 
+static void monitor_audio_levels_cb(proto_t *proto)
+{
+    int resp;
+    resp = effects_monitor_audio_levels(proto->list[1], atoi(proto->list[2]));
+    protocol_response_int(resp, proto);
+}
+
 static void monitor_midi_program_cb(proto_t *proto)
 {
     int resp;
@@ -373,6 +387,7 @@ static void cc_map_cb(proto_t *proto)
     }
     else
     {
+        scalepoints_count = 0;
         scalepoints = NULL;
     }
 
@@ -696,6 +711,7 @@ static int mod_host_init(jack_client_t* client, int socket_port, int feedback_po
     protocol_add_command(EFFECT_PRESET_SHOW, effects_preset_show_cb);
     protocol_add_command(EFFECT_CONNECT, effects_connect_cb);
     protocol_add_command(EFFECT_DISCONNECT, effects_disconnect_cb);
+    protocol_add_command(EFFECT_DISCONNECT_ALL, effects_disconnect_all_cb);
     protocol_add_command(EFFECT_BYPASS, effects_bypass_cb);
     protocol_add_command(EFFECT_PARAM_SET, effects_set_param_cb);
     protocol_add_command(EFFECT_PARAM_GET, effects_get_param_cb);
@@ -707,6 +723,7 @@ static int mod_host_init(jack_client_t* client, int socket_port, int feedback_po
     protocol_add_command(EFFECT_SET_BPB, effects_set_beats_per_bar_cb);
     protocol_add_command(MONITOR_ADDR_SET, monitor_addr_set_cb);
     protocol_add_command(MONITOR_OUTPUT, monitor_output_cb);
+    protocol_add_command(MONITOR_AUDIO_LEVELS, monitor_audio_levels_cb);
     protocol_add_command(MONITOR_MIDI_PROGRAM, monitor_midi_program_cb);
     protocol_add_command(MIDI_LEARN, midi_learn_cb);
     protocol_add_command(MIDI_MAP, midi_map_cb);
