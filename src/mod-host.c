@@ -897,17 +897,17 @@ int main(int argc, char **argv)
         {
             printf("Forking... child PID: %d\n", pid);
 
-            FILE *fd;
-            fd = fopen(PID_FILE, "w");
-            if (fd == NULL)
-            {
-                fprintf(stderr, "can't open PID File\n");
-            }
-            else
-            {
-                fprintf(fd, "%d\n", pid);
-                fclose(fd);
-            }
+            /* FILE *fd; */
+            /* fd = fopen(PID_FILE, "w"); */
+            /* if (fd == NULL) */
+            /* { */
+            /*     fprintf(stderr, "can't open PID File\n"); */
+            /* } */
+            /* else */
+            /* { */
+            /*     fprintf(fd, "%d\n", pid); */
+            /*     fclose(fd); */
+            /* } */
             exit(EXIT_SUCCESS);
         }
 #endif
