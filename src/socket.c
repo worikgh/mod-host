@@ -117,22 +117,7 @@ void set_interactive() {
 }
 int socket_start(int socket_port, int feedback_port, int buffer_size)
 {
-#ifdef _WIN32
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-    {
-        perror("WSAStartup");
-        return -1;
-    }
-
-    if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2)
-    {
-        WSACleanup();
-        perror("WSAStartup  version");
-        return -1;
-    }
-#endif
-
+  fprintf(stderr, "QZT socket_start(socket_port:%d, feedback_port: %d, buffer_size: %d\n");
     g_clientfd = g_fbclientfd = INVALID_SOCKET;
     g_serverfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
