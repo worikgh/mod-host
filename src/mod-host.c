@@ -688,6 +688,10 @@ static void term_signal(int sig)
 
 static int mod_host_init(jack_client_t* client, int socket_port, int feedback_port, int interactive)
 {
+  fprintf(stderr,
+          "QZT mod_host_init(jack_client_t* client, socket_port:%d, "
+          "feedback_port:%d, interactive:%d)\n",
+          socket_port, feedback_port, interactive);
 #ifdef HAVE_FFTW335
     /* Make fftw thread-safe */
     fftw_make_planner_thread_safe();
@@ -700,7 +704,6 @@ static int mod_host_init(jack_client_t* client, int socket_port, int feedback_po
     /* Initialize ne10 */
     ne10_init();
 #endif
-
     /* Setup the protocol */
     protocol_add_command(EFFECT_ADD, effects_add_cb);
     protocol_add_command(EFFECT_REMOVE, effects_remove_cb);
