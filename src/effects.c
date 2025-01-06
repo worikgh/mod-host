@@ -3984,8 +3984,29 @@ int effects_init(void* client)
     fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
     if (g_jack_global_client == NULL)
     {
-      fprintf(stderr, "jack_client_open failed, status = 0x%02x\n", jack_status);
-      return ERR_JACK_CLIENT_CREATION;
+	    fprintf(stderr, "jack_client_open failed, status = 0x%02x\n",
+		    jack_status);
+	    switch (jack_status) {
+	    case JackFailure:
+		    fprintf(stderr, "Failed to open JACK client.\n");
+		    break;
+	    case JackInvalidParameter:
+		    fprintf(stderr, "Invalid parameter provided.\n");
+		    break;
+	    case JackNameNotUnique:
+		    fprintf(stderr, "Client name is not unique.\n");
+		    break;
+	    case JackServerStarted:
+		    fprintf(stderr, "JACK server was started.\n");
+		    break;
+	    case JackServerFailed:
+		    fprintf(stderr, "JACK server is not running or failed.\n");
+		    break;
+	    default:
+		    fprintf(stderr, "Unknown error: %d\n", status);
+		    break;
+	    }	
+	    return ERR_JACK_CLIENT_CREATION;
     }
 
     fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
