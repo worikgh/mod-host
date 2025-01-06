@@ -4003,7 +4003,7 @@ int effects_init(void* client)
 		    fprintf(stderr, "JACK server is not running or failed.\n");
 		    break;
 	    default:
-		    fprintf(stderr, "Unknown error: %d\n", status);
+		    fprintf(stderr, "Unknown error: %d\n", jack_status);
 		    break;
 	    }	
 	    return ERR_JACK_CLIENT_CREATION;
