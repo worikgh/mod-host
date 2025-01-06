@@ -3972,19 +3972,20 @@ int effects_init(void* client)
 {
     /* This global client is for connections / disconnections and midi-learn */
     fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+    int jack_status;
     if (client != NULL)
     {
         g_jack_global_client = (jack_client_t*)client;
-    }
-    else
-    {
-        g_jack_global_client = jack_client_open("mod-host", JackNoStartServer, NULL);
+    } else {
+      // This is failing
+        g_jack_global_client = jack_client_open("mod-host", JackNoStartServer, &jack_status);
     }
 
     fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
     if (g_jack_global_client == NULL)
     {
-        return ERR_JACK_CLIENT_CREATION;
+      fprintf(stderr, "jack_client_open failed, status = 0x%02x\n", jack_status);
+      return ERR_JACK_CLIENT_CREATION;
     }
 
     fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
