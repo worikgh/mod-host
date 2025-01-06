@@ -3981,7 +3981,7 @@ int effects_init(void* client)
         g_jack_global_client = jack_client_open("mod-host", JackNoStartServer, &jack_status);
     }
 
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+    fprintf(stderr, "QZT %s:%d:%s g_jack_global_client: %p\n", __FILE__, __LINE__, __FUNCTION__, g_jack_global_client);
     if (g_jack_global_client == NULL)
     {
 	    fprintf(stderr, "jack_client_open failed, status = 0x%02x\n",
