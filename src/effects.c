@@ -3971,7 +3971,7 @@ static void ExternalControllerWriteFunction(LV2UI_Controller controller,
 int effects_init(void* client)
 {
     /* This global client is for connections / disconnections and midi-learn */
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE, __FUNCTION__);
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
     if (client != NULL)
     {
         g_jack_global_client = (jack_client_t*)client;
@@ -3981,13 +3981,13 @@ int effects_init(void* client)
         g_jack_global_client = jack_client_open("mod-host", JackNoStartServer, NULL);
     }
 
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE, __FUNCTION__);
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
     if (g_jack_global_client == NULL)
     {
         return ERR_JACK_CLIENT_CREATION;
     }
 
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE, __FUNCTION__);
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
     /* Register jack ports */
     g_midi_in_port = jack_port_register(g_jack_global_client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
 
@@ -4279,7 +4279,7 @@ int effects_init(void* client)
     g_lilv_nodes.toggled = lilv_new_uri(g_lv2_data, LV2_CORE__toggled);
     g_lilv_nodes.trigger = lilv_new_uri(g_lv2_data, LV2_PORT_PROPS__trigger);
     g_lilv_nodes.worker_interface = lilv_new_uri(g_lv2_data, LV2_WORKER__interface);
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE, __FUNCTION__);
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 
     /* URI and URID Feature initialization */
     urid_sem_init();
@@ -4541,7 +4541,7 @@ int effects_init(void* client)
 
     g_processing_enabled = true;
 
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE, __FUNCTION__);
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
     return SUCCESS;
 
     UNUSED_PARAM(global_effect_id_static_check1);
