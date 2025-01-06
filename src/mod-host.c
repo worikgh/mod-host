@@ -775,7 +775,7 @@ static int mod_host_init(jack_client_t* client, int socket_port, int feedback_po
     fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
     socket_set_receive_cb(protocol_parse);
 
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE, __FUNCTION__);
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
     return 0;
 }
 
