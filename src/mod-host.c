@@ -739,6 +739,7 @@ static int mod_host_init(jack_client_t* client, int socket_port, int feedback_po
     protocol_add_command(HMI_MAP, hmi_map_cb);
     protocol_add_command(HMI_UNMAP, hmi_unmap_cb);
     protocol_add_command(CPU_LOAD, cpu_load_cb);
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 #ifndef SKIP_READLINE
     protocol_add_command(LOAD_COMMANDS, load_cb);
     protocol_add_command(SAVE_COMMANDS, save_cb);
@@ -760,17 +761,21 @@ static int mod_host_init(jack_client_t* client, int socket_port, int feedback_po
         protocol_add_command(HELP, help_cb);
         protocol_add_command(QUIT, quit_cb);
     }
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 
     /* Startup the effects */
     if (effects_init(client))
         return -1;
 
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
     /* Setup the socket */
     if (!interactive && socket_start(socket_port, feedback_port, SOCKET_MSG_BUFFER_SIZE) < 0)
         return -1;
 
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
     socket_set_receive_cb(protocol_parse);
 
+    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE, __FUNCTION__);
     return 0;
 }
 
