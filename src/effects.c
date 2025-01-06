@@ -63,6 +63,7 @@ typedef unsigned int uint;
 #include <jack/thread.h>
 #include <jack/transport.h>
 #include <jack/uuid.h>
+#include <jack/types.h>
 
 /* LV2 and Lilv */
 #include <lilv/lilv.h>
@@ -3986,26 +3987,26 @@ int effects_init(void* client)
     {
 	    fprintf(stderr, "jack_client_open failed, status = 0x%02x\n",
 		    jack_status);
-	    /* switch (jack_status) { */
-	    /* case JackFailure: */
-	    /* 	    fprintf(stderr, "Failed to open JACK client.\n"); */
-	    /* 	    break; */
-	    /* case JackInvalidParameter: */
-	    /* 	    fprintf(stderr, "Invalid parameter provided.\n"); */
-	    /* 	    break; */
-	    /* case JackNameNotUnique: */
-	    /* 	    fprintf(stderr, "Client name is not unique.\n"); */
-	    /* 	    break; */
-	    /* case JackServerStarted: */
-	    /* 	    fprintf(stderr, "JACK server was started.\n"); */
-	    /* 	    break; */
-	    /* case JackServerFailed: */
-	    /* 	    fprintf(stderr, "JACK server is not running or failed.\n"); */
-	    /* 	    break; */
-	    /* default: */
-	    /* 	    fprintf(stderr, "Unknown error: %d\n", jack_status); */
-	    /* 	    break; */
-	    /* }	 */
+	    switch (jack_status) {
+	    case JackFailure:
+		    fprintf(stderr, "Failed to open JACK client.\n");
+		    break;
+	    case JackInvalidParameter:
+		    fprintf(stderr, "Invalid parameter provided.\n");
+		    break;
+	    case JackNameNotUnique:
+		    fprintf(stderr, "Client name is not unique.\n");
+		    break;
+	    case JackServerStarted:
+		    fprintf(stderr, "JACK server was started.\n");
+		    break;
+	    case JackServerFailed:
+		    fprintf(stderr, "JACK server is not running or failed.\n");
+		    break;
+	    default:
+		    fprintf(stderr, "Unknown error: %d\n", jack_status);
+		    break;
+	    }
 	    return ERR_JACK_CLIENT_CREATION;
     }
 
