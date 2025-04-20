@@ -3979,7 +3979,7 @@ int effects_init(void* client)
         g_jack_global_client = (jack_client_t*)client;
     } else {
       // This is failing
-        g_jack_global_client = jack_client_open("qzn3t-mod-host", JackNoStartServer, &jack_status);
+        g_jack_global_client = jack_client_open("mod-host", JackNoStartServer, &jack_status);
     }
 
     fprintf(stderr, "QZT %s:%d:%s g_jack_global_client: %p\n", __FILE__, __LINE__, __FUNCTION__, g_jack_global_client);
