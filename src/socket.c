@@ -320,14 +320,17 @@ void socket_run(int exit_on_failure)
 
     if (g_fbserverfd != INVALID_SOCKET)
     {
+      fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
         fbclientfd = accept(g_fbserverfd, NULL, NULL);
         if (fbclientfd == INVALID_SOCKET)
         {
             free(buffer);
             closesocket(clientfd);
 
-            if (! exit_on_failure)
-                return;
+            if (! exit_on_failure){
+	      fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+              return;
+	    }
 
             perror("accept error");
             exit(EXIT_FAILURE);
