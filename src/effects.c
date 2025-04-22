@@ -3972,7 +3972,7 @@ static void ExternalControllerWriteFunction(LV2UI_Controller controller,
 int effects_init(void* client)
 {
     /* This global client is for connections / disconnections and midi-learn */
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+    /* fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__); */
     jack_status_t jack_status;
     if (client != NULL)
     {
@@ -3982,7 +3982,7 @@ int effects_init(void* client)
         g_jack_global_client = jack_client_open("mod-host", JackNoStartServer, &jack_status);
     }
 
-    fprintf(stderr, "QZT %s:%d:%s g_jack_global_client: %p\n", __FILE__, __LINE__, __FUNCTION__, g_jack_global_client);
+    /* fprintf(stderr, "QZT %s:%d:%s g_jack_global_client: %p\n", __FILE__, __LINE__, __FUNCTION__, g_jack_global_client); */
     if ( !g_jack_global_client )
     {
 	    fprintf(stderr, "jack_client_open failed, status = 0x%02x\n",
@@ -4007,7 +4007,7 @@ int effects_init(void* client)
 	    return ERR_JACK_CLIENT_CREATION;
     }
 
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+    /* fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__); */
     /* Register jack ports */
     g_midi_in_port = jack_port_register(g_jack_global_client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
 
@@ -4299,7 +4299,7 @@ int effects_init(void* client)
     g_lilv_nodes.toggled = lilv_new_uri(g_lv2_data, LV2_CORE__toggled);
     g_lilv_nodes.trigger = lilv_new_uri(g_lv2_data, LV2_PORT_PROPS__trigger);
     g_lilv_nodes.worker_interface = lilv_new_uri(g_lv2_data, LV2_WORKER__interface);
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+    /* fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__); */
 
     /* URI and URID Feature initialization */
     urid_sem_init();
@@ -4561,7 +4561,7 @@ int effects_init(void* client)
 
     g_processing_enabled = true;
 
-    fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+    /* fprintf(stderr, "QZT %s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__); */
     return SUCCESS;
 
     UNUSED_PARAM(global_effect_id_static_check1);
@@ -4692,6 +4692,8 @@ int effects_add(const char *uri, int instance, int activate)
     effect_t *effect;
     port_t *port;
     int32_t error;
+    fprintf(stderr, "QZT %s:%d:%s effects_add(%s) -> %d/%d\n",
+            __FILE__, __LINE__, __FUNCTION__, uri, instance, activate);
 
     effect_name[31] = '\0';
     port_name[MAX_CHAR_BUF_SIZE] = '\0';

@@ -117,7 +117,7 @@ void set_interactive() {
 }
 int socket_start(int socket_port, int feedback_port, int buffer_size)
 {
-  fprintf(stderr, "QZT socket_start(socket_port:%d, feedback_port: %d, buffer_size: %d\n");
+  /* fprintf(stderr, "QZT socket_start(socket_port:%d, feedback_port: %d, buffer_size: %d\n"); */
     g_clientfd = g_fbclientfd = INVALID_SOCKET;
     g_serverfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
