@@ -401,6 +401,7 @@ void socket_run(int exit_on_failure)
             {
                 msgbuffer = buffer;
             }
+	    fprintf(stderr, "QZT %s:%d:%s socket got something: %s\n", __FILE__, __LINE__, __FUNCTION__, msgbuffer);
 
             if (g_receive_cb)
             {
