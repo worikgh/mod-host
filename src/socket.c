@@ -288,6 +288,7 @@ void socket_run(int exit_on_failure)
     char *msgbuffer;
     msg_t msg;
 
+    fprintf(stderr, "QZT %s:%d:%s Socket Run.\n", __FILE__, __LINE__, __FUNCTION__);
     /* Allocates memory to receive buffer */
     buffer = malloc(g_buffer_size);
     if (buffer == NULL)
@@ -301,6 +302,7 @@ void socket_run(int exit_on_failure)
 
     /* Wait for client connection */
     clientfd = accept(g_serverfd, NULL, NULL);
+    fprintf(stderr, "QZT %s:%d:%s  A connection(?) clientfd:%d\n", __FILE__, __LINE__, __FUNCTION__, clientfd);
     if (clientfd == INVALID_SOCKET)
     {
         free(buffer);
