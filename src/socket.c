@@ -117,7 +117,10 @@ void set_interactive() {
 }
 int socket_start(int socket_port, int feedback_port, int buffer_size)
 {
-  /* fprintf(stderr, "QZT socket_start(socket_port:%d, feedback_port: %d, buffer_size: %d\n"); */
+  fprintf(
+      stderr,
+      "QZT socket_start(socket_port:%d, feedback_port: %d, buffer_size: %d\n",
+      socket_port, feedback_port, buffer_size);
     g_clientfd = g_fbclientfd = INVALID_SOCKET;
     g_serverfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -302,7 +305,7 @@ void socket_run(int exit_on_failure)
 
     /* Wait for client connection */
     clientfd = accept(g_serverfd, NULL, NULL);
-    fprintf(stderr, "QZT %s:%d:%s  A connection(?) clientfd:%d\n", __FILE__, __LINE__, __FUNCTION__, clientfd);
+    fprintf(stderr, "QZT %s:%d:%s  A connection(?) clientfd:%d =?=  INVALID_SOCKET %d\n", __FILE__, __LINE__, __FUNCTION__, clientfd, INVALID_SOCKET);
     if (clientfd == INVALID_SOCKET)
     {
         free(buffer);
@@ -313,6 +316,7 @@ void socket_run(int exit_on_failure)
         perror("accept error");
         exit(EXIT_FAILURE);
     }
+    fprintf(stderr, "QZT %s:%d:%s Still working\n", __FILE__, __LINE__, __FUNCTION__);
 
     if (g_fbserverfd != INVALID_SOCKET)
     {
@@ -333,6 +337,7 @@ void socket_run(int exit_on_failure)
     {
         fbclientfd = INVALID_SOCKET;
     }
+    fprintf(stderr, "QZT %s:%d:%s Still working\n", __FILE__, __LINE__, __FUNCTION__);
 
     g_clientfd = clientfd;
     g_fbclientfd = fbclientfd;
@@ -341,6 +346,7 @@ void socket_run(int exit_on_failure)
     {
         mod_memset(buffer, 0, g_buffer_size);
         count = recv(clientfd, buffer, g_buffer_size, 0);
+	fprintf(stderr, "QZT %s:%d:%s Received %d\n", __FILE__, __LINE__, __FUNCTION__, count);
 
         if (count > 0) /* Data received */
         {
