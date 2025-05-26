@@ -130,7 +130,6 @@ static pthread_t intclient_socket_thread;
 
 static void effects_add_cb(proto_t *proto)
 {
-    fprintf(stderr, "QZT %s:%d:%s effects_add_cb\n", __FILE__, __LINE__, __FUNCTION__);
     int resp;
     resp = effects_add(proto->list[1], atoi(proto->list[2]), 1);
     protocol_response_int(resp, proto);
@@ -689,10 +688,6 @@ static void term_signal(int sig)
 
 static int mod_host_init(jack_client_t* client, int socket_port, int feedback_port, int interactive)
 {
-  fprintf(stderr,
-          "QZT mod_host_init(jack_client_t* client, socket_port:%d, "
-          "feedback_port:%d, interactive:%d)\n",
-          socket_port, feedback_port, interactive);
 #ifdef HAVE_FFTW335
     /* Make fftw thread-safe */
     fftw_make_planner_thread_safe();

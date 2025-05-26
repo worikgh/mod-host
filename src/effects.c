@@ -4692,8 +4692,6 @@ int effects_add(const char *uri, int instance, int activate)
     effect_t *effect;
     port_t *port;
     int32_t error;
-    fprintf(stderr, "QZT %s:%d:%s effects_add(%s) -> %d/%d\n",
-            __FILE__, __LINE__, __FUNCTION__, uri, instance, activate);
 
     effect_name[31] = '\0';
     port_name[MAX_CHAR_BUF_SIZE] = '\0';
