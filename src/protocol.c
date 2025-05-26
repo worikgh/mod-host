@@ -253,7 +253,6 @@ void protocol_add_command(const char *command, void (*callback)(proto_t *proto))
 
 void protocol_response(const char *response, proto_t *proto)
 {
-    fprintf(stderr, "%s:%d:%s response: '%s'\n", __FILE__, __LINE__, __FUNCTION__, response);
     proto->response_size = strlen(response);
     proto->response = MALLOC(proto->response_size + 1);
     strcpy(proto->response, response);
